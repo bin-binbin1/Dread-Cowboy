@@ -229,7 +229,12 @@ public class Server {
                 }
             }
         };
-
+        for(int i=9;i<20;i++){
+            int finalI = i;
+            functionArray[i]=(byte[] bytes, Player p) -> {
+                System.out.println("我没写function"+ finalI);
+            };
+        }
 
 
     }
@@ -330,7 +335,7 @@ public class Server {
         OutputStream out;
         byte[] bytes=new byte[BufferSize];
         bytes[0]=5;
-        while(queueThree.size()>0&&queueOne.size()>0){
+        while(!queueThree.isEmpty() && !queueOne.isEmpty()){
             Team team1=queueThree.remove();
             Team team2=queueOne.remove();
             players=mergeLists(team1.getTeamMember(),team2.getTeamMember());
@@ -354,7 +359,7 @@ public class Server {
                 out.flush();
             }
         }
-        while(queueTwo.size()>0 && queueOne.size()>1){
+        while(!queueTwo.isEmpty() && queueOne.size()>1){
             Team team1=queueTwo.remove();
             Team team2=queueOne.remove();
             Team team3=queueOne.remove();
