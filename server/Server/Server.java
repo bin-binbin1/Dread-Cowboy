@@ -88,6 +88,10 @@ public class Server {
                 int teamID=getInt(bytes,2);
                 for (Team team: teamList) {
                     if(team.getTeamID()==teamID){
+                        if(team.getTeamMember().size()>3){
+                            System.out.println("队伍满但是拉人");
+                            return;
+                        }
                         bytes[0]=2;
                         bytes[1]=(byte) (p.getName().getBytes().length);
                         try {
@@ -135,9 +139,11 @@ public class Server {
                     break;
                 }
             }
-            CopyOnWriteArrayList<Player> currentTeamMember=new CopyOnWriteArrayList<>();
-            currentTeamMember.add(p);
-            teamList.add(new Team(p.getId(), currentTeamMember));
+            if(p.getSocket()!=null) {
+                CopyOnWriteArrayList<Player> currentTeamMember = new CopyOnWriteArrayList<>();
+                currentTeamMember.add(p);
+                teamList.add(new Team(p.getId(), currentTeamMember));
+            }
         };//exit team
         functionArray[5]=(byte[] bytes,Player p) -> {
             int teamID=getInt(bytes,1);
@@ -161,6 +167,7 @@ public class Server {
                     break;
                 }
             }
+            teamList.remove(new Team(p.getId(),null));
         };//destory team
         functionArray[6]=(byte[] bytes,Player p) -> {
             int teamID=p.getId();
@@ -273,6 +280,7 @@ public class Server {
     }
 
     private static void handleClient(Socket clientSocket, int clientId) {
+        Player self = addClient(clientSocket, clientId);
         try {
             InputStream dataInputStream = clientSocket.getInputStream();
             OutputStream dataOutputStream = clientSocket.getOutputStream();
@@ -282,7 +290,6 @@ public class Server {
             dataOutputStream.write(Data);
             dataOutputStream.flush();
             CopyOnWriteArrayList<Player> currentTeamMember=new CopyOnWriteArrayList<>();
-            Player self = addClient(clientSocket, clientId);
             currentTeamMember.add(self);
             //自成一队
             teamList.add(new Team(clientId,currentTeamMember));
@@ -291,8 +298,8 @@ public class Server {
                 while (bytesRead < 1024) {
                     int result = dataInputStream.read(Data, bytesRead, 1024 - bytesRead);
                     if (result == -1) {
-                        // 客户端关闭连接，从Map中删除连接及其标识
-                        removeClient(clientId);
+                        removeClient(self);
+                        bytesRead=-1;
                         break;
                     }
                     bytesRead += result;
@@ -313,7 +320,7 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
             // 发生异常时也需要从Map中删除连接及其标识
-            removeClient(clientId);
+            removeClient(self);
         }
     }
 
@@ -325,10 +332,16 @@ public class Server {
         return p;
     }
 
-    private static void removeClient(Integer clientId) {
+    private static void removeClient(Player player) {
         // 从Map中删除指定连接及其标识
-        playerList.remove(new Player(clientId,null,""));
-        System.out.println("客户端已从Map中移除，标识为：" + clientId);
+        playerList.remove(player);
+        if(teamList.contains(new Team(player.getId(), null))) {
+            functionArray[5].accept(new byte[1024],player);
+        }else{
+            player.setSocket(null);
+            functionArray[4].accept(new byte[1024],player);
+        }
+        System.out.println("客户端已从Map中移除，标识为：" + player.getId());
     }
 
     private static synchronized void searchTeam() throws IOException {
