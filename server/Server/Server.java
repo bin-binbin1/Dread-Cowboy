@@ -64,9 +64,10 @@ public class Server {
                             out.flush();
                             out =player.getSocket().getOutputStream();
                             bytes[0]=8;
+                            writeInt(bytes,1,player.getId());
                             name = p.getName();
-                            bytes[1]=(byte) (name.getBytes().length);
-                            writeString(bytes,2,name);
+                            bytes[5]=(byte) (name.getBytes().length);
+                            writeString(bytes,6,name);
                             out.write(bytes);
                             out.flush();
                             break;
@@ -228,7 +229,7 @@ public class Server {
                     }
                 }
             }
-        };
+        };// stop search team
         for(int i=9;i<20;i++){
             int finalI = i;
             functionArray[i]=(byte[] bytes, Player p) -> {
