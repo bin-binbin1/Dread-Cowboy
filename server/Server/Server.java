@@ -17,7 +17,7 @@ public class Server {
     static final int waitingTime=5000;//5s == 5000ms 回合结算等待时间
     static final int startTime=2000;//5s == 2000ms 游戏开始前等待时间
     static final int endTime=5000;//5s == 2000ms 游戏结束前等待时间
-    static final int rounds=7;//回合数
+    static final int rounds=6;//回合数
     static final int items=2+1;//两个物品
     private static final LinkedBlockingDeque<Team> queueOne = new LinkedBlockingDeque<Team>();
     private static final LinkedBlockingDeque<Team> queueTwo = new LinkedBlockingDeque<Team>();
@@ -507,18 +507,16 @@ class Team{
     }
 }
 class House implements Runnable{
-    private CopyOnWriteArrayList<Player> players;
-    private int teamID;
-    private int[] choices;
-    private int[] points;
-    private byte[] bytes=new byte[1024];
+    private final CopyOnWriteArrayList<Player> players;
+    private final int teamID;
+    private final byte[] choices;
+    private final byte[] bytes=new byte[1024];
     private byte specialItems,platform;
-    private SecureRandom random = new SecureRandom();
+    private final SecureRandom random = new SecureRandom();
     public House(CopyOnWriteArrayList<Player> players,int teamID){
         this.players=players;
         this.teamID=teamID;
-        choices=new int[4];
-        points=new int[4];
+        choices=new byte[4];
     }
     @Override
     public void run(){
@@ -527,8 +525,9 @@ class House implements Runnable{
             Thread.sleep(Server.startTime);
             gameStart();
             for(int i=0;i<Server.rounds;i++){
+                roundStart();
                 Thread.sleep(Server.oneRoundTime);
-
+                roundEnd();
                 Thread.sleep(Server.waitingTime);
             }
             gameEnd();;
@@ -567,7 +566,7 @@ class House implements Runnable{
         bytes[2]=platform;
         OutputStream out;
         for(int i=0;i<4;i++){
-            choices[i]=i+1;
+            choices[i]=(byte) (i+1);
         }
         try {
             for (Player player:players) {
@@ -581,15 +580,21 @@ class House implements Runnable{
             throw new RuntimeException(e);
         }
     }
-    private void roundEnd(){
-
+    private void roundEnd() throws IOException {
         bytes[0]=7;
-
+        for(int i=1;i<5;i++){
+            bytes[i]=choices[i-1];
+        }
+        for (Player player:players) {
+            OutputStream out=player.getSocket().getOutputStream();
+            out.write(bytes);
+            out.flush();
+        }
     }
     public int getHouseID(){
         return teamID;
     }
-    public void makeChoice(int playerID,int choice){
+    public void makeChoice(int playerID,byte choice){
         for(int i=0;i<4;i++){
             if(players.get(i)!=null) {
                 if (players.get(i).getId() == playerID) {
