@@ -8,6 +8,12 @@ public class ButtonController : MonoBehaviour
     public Button team2help;
     public Button help2team;
     public GameObject team, help;
+    public Button[] playerPlatforms;
+    public Button[] centrePlatforms;
+    public Button exitGame, matchingGame, searchPeople, acceptInv, rejectInv;
+    public Button destroyTeam, leaveTeam;
+    public Button items;
+    public Button continueGame, closeGame;
     // Start is called before the first frame update
     void Start()
     {

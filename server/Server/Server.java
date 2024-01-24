@@ -237,6 +237,16 @@ public class Server {
                 }
             }
         };// stop search team
+        functionArray[9]=(byte[] bytes,Player p) -> {
+            int id=getInt(bytes,1);
+            bytes[0]=13;
+            for (House h : houseList) {
+                if(h.getHouseID()==id){
+                    h.useItem(bytes[5],bytes[6]);
+                }
+            }
+
+        };
         for(int i=9;i<20;i++){
             int finalI = i;
             functionArray[i]=(byte[] bytes, Player p) -> {
@@ -521,6 +531,7 @@ class Team{
 }
 class House implements Runnable{
     private static int games=0;
+    private static final int niu=4,men=4,jin=2;
     private final CopyOnWriteArrayList<Player> players;
     private final int teamID;
     private final byte[] choices;
@@ -541,7 +552,7 @@ class House implements Runnable{
             Thread.sleep(Server.startTime);
             gameStart();
             for(int i=0;i<Server.rounds;i++){
-                roundStart();
+                roundStart(i);
                 Thread.sleep(Server.oneRoundTime);
                 roundEnd();
                 Thread.sleep(Server.waitingTime);
@@ -589,8 +600,20 @@ class House implements Runnable{
             out.flush();
         }
     }
-    private void roundStart(){
-        byte specialItems = (byte) (random.nextInt(Server.items));
+    private void roundStart(int round){
+        byte specialItems;
+        if(round<3){
+            int r=random.nextInt(niu+men+jin);
+            if(r<niu){
+                specialItems=1;
+            }else if(r<niu+men){
+                specialItems=2;
+            }else{
+                specialItems=3;
+            }
+        }else{
+            specialItems = (byte) (random.nextInt(Server.items)+1);
+        }
         byte platform = (byte) (random.nextInt(7) + 1);
         bytes[0]=5;
         bytes[1]= specialItems;
@@ -623,7 +646,12 @@ class House implements Runnable{
     public int getHouseID(){
         return teamID;
     }
-    public void makeChoice(int playerID,byte choice){
+
+    public CopyOnWriteArrayList<Player> getPlayers() {
+        return players;
+    }
+
+    public void makeChoice(int playerID, byte choice){
         for(int i=0;i<4;i++){
             if(players.get(i)!=null) {
                 if (players.get(i).getId() == playerID) {
@@ -640,5 +668,10 @@ class House implements Runnable{
                 break;
             }
         }
+    }
+
+    public void useItem(byte aByte, byte b) {
+        bytes[5]=aByte;
+        bytes[6]=b;
     }
 }
