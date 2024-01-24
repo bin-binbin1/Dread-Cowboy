@@ -520,11 +520,11 @@ class Team{
     }
 }
 class House implements Runnable{
+    private static int games=0;
     private final CopyOnWriteArrayList<Player> players;
     private final int teamID;
     private final byte[] choices;
     private final byte[] bytes=new byte[1024];
-    private byte specialItems,platform;
     private final SecureRandom random = new SecureRandom();
     public House(CopyOnWriteArrayList<Player> players,int teamID){
         this.players=players;
@@ -533,7 +533,10 @@ class House implements Runnable{
     }
     @Override
     public void run(){
+
         Server.houseList.add(this);
+        System.out.println("第"+games+"局开始！");
+        games++;
         try {
             Thread.sleep(Server.startTime);
             gameStart();
@@ -551,10 +554,25 @@ class House implements Runnable{
     }
     private void gameStart() throws IOException {
         bytes[0]=11;
+        List<Player> arrayList = new ArrayList<>(players);
+        Collections.shuffle(arrayList);
+        players.clear();
+        players.addAll(arrayList);
         OutputStream out;
+        int t=2;
+        for (Player player : players){
+            String name= player.getName();
+            int l=name.getBytes().length;
+            bytes[t]=(byte) l;
+            Server.writeString(bytes,t+1,name);
+            t+=1+l;
+        }
+        t=1;
         for (Player player : players) {
             if(player==null)
                 continue;
+            bytes[1]=(byte) t;
+            t++;
             out=player.getSocket().getOutputStream();
             out.write(bytes);
             out.flush();;
@@ -572,11 +590,11 @@ class House implements Runnable{
         }
     }
     private void roundStart(){
-        specialItems=(byte) (random.nextInt(Server.items));
-        platform=(byte) (random.nextInt(7)+1);
+        byte specialItems = (byte) (random.nextInt(Server.items));
+        byte platform = (byte) (random.nextInt(7) + 1);
         bytes[0]=5;
-        bytes[1]=specialItems;
-        bytes[2]=platform;
+        bytes[1]= specialItems;
+        bytes[2]= platform;
         OutputStream out;
         for(int i=0;i<4;i++){
             choices[i]=(byte) (i+1);
@@ -595,9 +613,7 @@ class House implements Runnable{
     }
     private void roundEnd() throws IOException {
         bytes[0]=7;
-        for(int i=1;i<5;i++){
-            bytes[i]=choices[i-1];
-        }
+        System.arraycopy(choices, 0, bytes, 1, 4);
         for (Player player:players) {
             OutputStream out=player.getSocket().getOutputStream();
             out.write(bytes);
