@@ -7,7 +7,7 @@ public class InviteInfoManger : MonoBehaviour
 {
     public GameObject panel;
     //自动生成对象
-    private void SpawnObj(object[] o)
+    public void SpawnObj(object[] o)
     {
         int leaderid=(int)o[0];
         string leadername=(string)o[1];

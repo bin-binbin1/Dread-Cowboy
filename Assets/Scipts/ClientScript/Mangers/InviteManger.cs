@@ -5,9 +5,9 @@ using UnityEngine.UI;
 
 public class InviteManger : MonoBehaviour
 {
-    GameObject friendname;
+    public GameObject friendname;
     bool isfull = false;
-    private GameObject receiveCube;
+    public GameObject networkManager;
     InputField tt;
     GameObject info;
     int lastid=0;
@@ -15,8 +15,6 @@ public class InviteManger : MonoBehaviour
 
     void Start()
     {
-        receiveCube = GameObject.Find("Client");
-        friendname = GameObject.Find("FriendName");
         info = GameObject.Find("InviteInfo");
     }
 
@@ -33,7 +31,7 @@ public class InviteManger : MonoBehaviour
     public void InviteFriend()
     {
         info.GetComponent<Text>().text = "";
-        receiveCube.SendMessage("IsFull");
+        networkManager.SendMessage("IsFull");
         if (!isfull)
         {
             tt = friendname.GetComponentInChildren<InputField>();
@@ -53,8 +51,8 @@ public class InviteManger : MonoBehaviour
                     }
                     else
                     {
-                        timer = 100f;
-                        receiveCube.SendMessage("InviteFriend", frid);
+                        timer = 10f;
+                        networkManager.SendMessage("InviteFriend", frid);
                         lastid = frid;
                     }
                 }

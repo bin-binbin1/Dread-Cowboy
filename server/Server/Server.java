@@ -53,7 +53,16 @@ public class Server {
             try {
                 for (Player player :playerList) {
                     if(player.getId()==id){
-
+                            boolean a=false;
+                            for(Team team:teamList){
+                                if(team.getTeamID()==id){
+                                    a=true;
+                                    break;
+                                }
+                            }
+                            if(!a){
+                                break;
+                            }
                             find=true;
                             OutputStream out=p.getSocket().getOutputStream();
                             bytes[0]=1;
@@ -78,6 +87,7 @@ public class Server {
                     bytes[0]=1;
                     bytes[1]=0;
                     out.write(bytes);
+                    out.flush();
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -88,10 +98,11 @@ public class Server {
                 int teamID=getInt(bytes,2);
                 for (Team team: teamList) {
                     if(team.getTeamID()==teamID){
-                        if(team.getTeamMember().size()>3){
-                            System.out.println("队伍满但是拉人");
+                        if(team.getTeamMember().size()>3||team.isMatching()) {
+                            System.out.println("队伍满或队伍已开始匹配");
                             return;
                         }
+
                         bytes[0]=2;
                         bytes[1]=(byte) (p.getName().getBytes().length);
                         try {
@@ -175,9 +186,9 @@ public class Server {
                 if(teamID==team.getTeamID()){
                     int l=team.getTeamMember().size();
                     switch (l){
-                        case 1:queueOne.add(team); break;
-                        case 2:queueTwo.add(team); break;
-                        case 3:queueThree.add(team); break;
+                        case 1:queueOne.add(team);team.setMatching(true); break;
+                        case 2:queueTwo.add(team); team.setMatching(true);break;
+                        case 3:queueThree.add(team);team.setMatching(true); ;break;
                         case 4:House house=new House(team.getTeamMember(),teamID);
                             bytes[0]=5;
                             writeInt(bytes,1,teamID);
@@ -203,7 +214,7 @@ public class Server {
                                     out.flush();
                             }
                             searchTeam();
-                        } catch (IOException e) {
+                        } catch (IOException | InterruptedException e) {
                             throw new RuntimeException(e);
                         }
                     }
@@ -246,8 +257,8 @@ public class Server {
                 }
             }
 
-        };
-        for(int i=9;i<20;i++){
+        };//user special item
+        for(int i=10;i<20;i++){
             int finalI = i;
             functionArray[i]=(byte[] bytes, Player p) -> {
                 System.out.println("我没写function"+ finalI);
@@ -354,7 +365,7 @@ public class Server {
         System.out.println("客户端已从Map中移除，标识为：" + player.getId());
     }
 
-    private static synchronized void searchTeam() throws IOException {
+    private static synchronized void searchTeam() throws IOException, InterruptedException {
         CopyOnWriteArrayList<Player> players;
         OutputStream out;
         byte[] bytes=new byte[BufferSize];
@@ -362,6 +373,7 @@ public class Server {
         while(!queueThree.isEmpty() && !queueOne.isEmpty()){
             Team team1=queueThree.remove();
             Team team2=queueOne.remove();
+            team1.startgame();team2.startgame();
             players=mergeLists(team1.getTeamMember(),team2.getTeamMember());
             houseManager.submit(new House(players, team1.getTeamID()));
             writeInt(bytes,1,team1.getTeamID());
@@ -374,6 +386,7 @@ public class Server {
         while(queueTwo.size()>1){
             Team team1=queueTwo.remove();
             Team team2=queueTwo.remove();
+            team1.startgame();team2.startgame();
             players=mergeLists(team1.getTeamMember(),team2.getTeamMember());
             houseManager.submit(new House(players, team1.getTeamID()));
             writeInt(bytes,1,team1.getTeamID());
@@ -387,6 +400,7 @@ public class Server {
             Team team1=queueTwo.remove();
             Team team2=queueOne.remove();
             Team team3=queueOne.remove();
+            team1.startgame();team2.startgame();team3.startgame();
             players=mergeLists(mergeLists(team1.getTeamMember(),team2.getTeamMember()),team3.getTeamMember());
             houseManager.submit(new House(players, team1.getTeamID()));
             writeInt(bytes,1,team1.getTeamID());
@@ -401,6 +415,7 @@ public class Server {
             Team team2=queueOne.remove();
             Team team3=queueOne.remove();
             Team team4=queueOne.remove();
+            team1.startgame();team2.startgame();team3.startgame();team4.startgame();;
             players=mergeLists(mergeLists(mergeLists(team1.getTeamMember(),team2.getTeamMember()),team3.getTeamMember()),team4.getTeamMember());
             houseManager.submit(new House(players, team1.getTeamID()));
             writeInt(bytes,1,team1.getTeamID());
@@ -493,12 +508,18 @@ class Player{
 }
 class Team{
     private int teamID;
-
+    private boolean matching;
     public Team(int teamID, CopyOnWriteArrayList<Player> teamMember) {
         this.teamID = teamID;
         this.teamMember = teamMember;
+        matching=false;
     }
-
+    public boolean isMatching(){
+        return matching;
+    }
+    public void setMatching(boolean m){
+        matching=m;
+    }
     private CopyOnWriteArrayList<Player> teamMember;
 
     public CopyOnWriteArrayList<Player> getTeamMember() {
@@ -527,6 +548,10 @@ class Team{
         if (obj == null || getClass() != obj.getClass()) return false;
         Team t=(Team) obj;
         return teamID == t.teamID;
+    }
+    public void startgame() throws InterruptedException {
+        Thread.sleep(10000);
+        matching=false;
     }
 }
 class House implements Runnable{
@@ -619,8 +644,12 @@ class House implements Runnable{
         bytes[1]= specialItems;
         bytes[2]= platform;
         OutputStream out;
-        for(int i=0;i<4;i++){
-            choices[i]=(byte) (i+1);
+        for(int i=0;i<4;i++) {
+            if (players.get(i) == null) {
+                choices[i]=(byte) (random.nextInt(7)+1);
+            } else {
+                choices[i] = (byte) (i + 1);
+            }
         }
         try {
             for (Player player:players) {
@@ -638,6 +667,8 @@ class House implements Runnable{
         bytes[0]=7;
         System.arraycopy(choices, 0, bytes, 1, 4);
         for (Player player:players) {
+            if(player==null)
+                continue;
             OutputStream out=player.getSocket().getOutputStream();
             out.write(bytes);
             out.flush();
