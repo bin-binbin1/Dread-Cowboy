@@ -17,7 +17,7 @@ public class Server {
     static final int waitingTime=5000;//5s == 5000ms 回合结算等待时间
     static final int startTime=2000;//5s == 2000ms 游戏开始前等待时间
     static final int endTime=5000;//5s == 2000ms 游戏结束前等待时间
-    static final int rounds=6;//回合数
+    static final int rounds=6;//6;//回合数
     static final int items=2+1;//两个物品
     private static final LinkedBlockingDeque<Team> queueOne = new LinkedBlockingDeque<Team>();
     private static final LinkedBlockingDeque<Team> queueTwo = new LinkedBlockingDeque<Team>();
@@ -104,18 +104,34 @@ public class Server {
                         }
 
                         bytes[0]=2;
-                        bytes[1]=(byte) (p.getName().getBytes().length);
+
                         try {
+                            OutputStream out=p.getSocket().getOutputStream();
+                            for(Player player : team.getTeamMember()){
+                                bytes[1]=(byte)(player.getName().getBytes().length);
+                                writeString(bytes,2,player.getName());
+                                out.write(bytes);
+                                out.flush();
+                                Thread.sleep(100);
+                            }
+                            bytes[1]=(byte) (p.getName().getBytes().length);
                             writeString(bytes,2,p.getName());
                             for (Player player : team.getTeamMember()) {
-                                OutputStream out = player.getSocket().getOutputStream();
+                                out = player.getSocket().getOutputStream();
                                 out.write(bytes);
                                 out.flush();
                             }
-                        }catch (IOException e) {
+                            for(Player player : team.getTeamMember()){
+                                bytes[1]=(byte)(player.getName().getBytes().length);
+                                writeString(bytes,2,player.getName());
+                            }
+                        }catch (IOException | InterruptedException e) {
                             throw new RuntimeException(e);
                         }
+
                         team.addPlayer(p);
+
+
                         teamList.remove(new Team(p.getId(), null));
                         break;
                     }
@@ -226,6 +242,7 @@ public class Server {
             int houseID=getInt(bytes,1);
             for(House house:houseList){
                 if(houseID==house.getHouseID()){
+                    System.out.println("id:"+p.getId());
                     house.makeChoice(p.getId(),bytes[5]);
                     break;
                 }
@@ -234,6 +251,7 @@ public class Server {
         functionArray[8]=(byte[] bytes,Player p) -> {
             bytes[0]=13;
             OutputStream out;
+            int teamsize=0;
             for (Team team:teamList) {
                 if(team.getTeamID()==p.getId()){
                     for (Player player :team.getTeamMember()) {
@@ -245,8 +263,17 @@ public class Server {
                             throw new RuntimeException(e);
                         }
                     }
+                    teamsize=team.getTeamMember().size();
+                    if(teamsize==1){
+                        queueOne.remove(team);
+                    } else if (teamsize==2) {
+                        queueTwo.remove(team);
+                    } else if (teamsize==3) {
+                        queueThree.remove(team);
+                    }
                 }
             }
+
         };// stop search team
         functionArray[9]=(byte[] bytes,Player p) -> {
             int id=getInt(bytes,1);
@@ -337,6 +364,7 @@ public class Server {
 
             // 关闭客户端连接
             clientSocket.close();
+            removeClient(self);
             System.out.println("客户端已断开连接");
         } catch (IOException e) {
             e.printStackTrace();
@@ -347,7 +375,7 @@ public class Server {
 
     private static Player addClient(Socket clientSocket, int clientId) {
         // 将连接及其标识添加到Map中
-        Player p=new Player(clientId,clientSocket,"");
+        Player p=new Player(clientId,clientSocket,"牛仔"+clientId);
         playerList.add(p);
         System.out.println("客户端已添加到Map，标识为：" + clientId);
         return p;
@@ -355,6 +383,14 @@ public class Server {
 
     private static void removeClient(Player player) {
         // 从Map中删除指定连接及其标识
+        if(player.getRoomid()!=0){//离开房间
+            for (House h : houseList) {
+                if(h.getHouseID()== player.getRoomid()){
+                    h.leave(player.getId());
+                    break;
+                }
+            }
+        }
         playerList.remove(player);
         if(teamList.contains(new Team(player.getId(), null))) {
             functionArray[5].accept(new byte[1024],player);
@@ -366,6 +402,7 @@ public class Server {
     }
 
     private static synchronized void searchTeam() throws IOException, InterruptedException {
+        System.out.println("尝试寻找对局");
         CopyOnWriteArrayList<Player> players;
         OutputStream out;
         byte[] bytes=new byte[BufferSize];
@@ -425,6 +462,7 @@ public class Server {
                 out.flush();
             }
         }
+        System.out.println("寻找结束");
     }
     private static synchronized int generateRandomFourDigitNumber() {
         // 生成四位数的随机数
@@ -473,6 +511,7 @@ class Player{
         this.id=id;
         this.socket=socket1;
         this.name=name;
+        roomid=0;
     }
     public int getId() {
         return id;
@@ -503,8 +542,18 @@ class Player{
         return id == p.id;
     }
     private int id;
+
+    public int getRoomid() {
+        return roomid;
+    }
+
+    public void setRoomid(int roomid) {
+        this.roomid = roomid;
+    }
+
     private Socket socket;
     private String name;
+    private int roomid;
 }
 class Team{
     private int teamID;
@@ -550,9 +599,9 @@ class Team{
         return teamID == t.teamID;
     }
     public void startgame() throws InterruptedException {
-        Thread.sleep(10000);
+        Thread.sleep(100);
         matching=false;
-    }
+    }//为什么要sleep，我已经忘了为什么了
 }
 class House implements Runnable{
     private static int games=0;
@@ -565,7 +614,7 @@ class House implements Runnable{
     public House(CopyOnWriteArrayList<Player> players,int teamID){
         this.players=players;
         this.teamID=teamID;
-        choices=new byte[4];
+        choices=new byte[6];
     }
     @Override
     public void run(){
@@ -574,11 +623,14 @@ class House implements Runnable{
         System.out.println("第"+games+"局开始！");
         games++;
         try {
-            Thread.sleep(Server.startTime);
             gameStart();
+            Thread.sleep(Server.startTime);
+
             for(int i=0;i<Server.rounds;i++){
+                System.out.println("round start");
                 roundStart(i);
                 Thread.sleep(Server.oneRoundTime);
+                System.out.println("round end");
                 roundEnd();
                 Thread.sleep(Server.waitingTime);
             }
@@ -596,22 +648,28 @@ class House implements Runnable{
         players.addAll(arrayList);
         OutputStream out;
         int t=2;
+        StringBuilder temp= new StringBuilder();
         for (Player player : players){
+            player.setRoomid(teamID);
             String name= player.getName();
             int l=name.getBytes().length;
             bytes[t]=(byte) l;
             Server.writeString(bytes,t+1,name);
             t+=1+l;
+            temp.append(name);
         }
+        System.out.println(temp);
         t=1;
         for (Player player : players) {
-            if(player==null)
+            if(player==null) {
+                System.out.println("有玩家中途退出");
                 continue;
+            }
             bytes[1]=(byte) t;
             t++;
             out=player.getSocket().getOutputStream();
             out.write(bytes);
-            out.flush();;
+            out.flush();
         }
     }
     private void gameEnd() throws IOException {
@@ -623,6 +681,7 @@ class House implements Runnable{
             out=player.getSocket().getOutputStream();
             out.write(bytes);
             out.flush();
+            player.setRoomid(0);
         }
     }
     private void roundStart(int round){
@@ -640,7 +699,7 @@ class House implements Runnable{
             specialItems = (byte) (random.nextInt(Server.items)+1);
         }
         byte platform = (byte) (random.nextInt(7) + 1);
-        bytes[0]=5;
+        bytes[0]=6;
         bytes[1]= specialItems;
         bytes[2]= platform;
         OutputStream out;
@@ -651,6 +710,8 @@ class House implements Runnable{
                 choices[i] = (byte) (i + 1);
             }
         }
+        choices[4]=0;
+        choices[5]=0;
         try {
             for (Player player:players) {
                 if(player==null)
@@ -665,7 +726,7 @@ class House implements Runnable{
     }
     private void roundEnd() throws IOException {
         bytes[0]=7;
-        System.arraycopy(choices, 0, bytes, 1, 4);
+        System.arraycopy(choices, 0, bytes, 1, 6);
         for (Player player:players) {
             if(player==null)
                 continue;
@@ -683,9 +744,11 @@ class House implements Runnable{
     }
 
     public void makeChoice(int playerID, byte choice){
+        System.out.println("call make choice");
         for(int i=0;i<4;i++){
             if(players.get(i)!=null) {
                 if (players.get(i).getId() == playerID) {
+                    System.out.println(playerID+"的选择为"+choice);
                     choices[i]=choice;
                     break;
                 }
@@ -702,7 +765,7 @@ class House implements Runnable{
     }
 
     public void useItem(byte aByte, byte b) {
-        bytes[5]=aByte;
-        bytes[6]=b;
+        choices[5]=aByte;
+        choices[6]=b;
     }
 }

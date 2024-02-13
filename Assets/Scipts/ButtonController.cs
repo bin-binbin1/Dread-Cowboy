@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,11 +11,9 @@ public class ButtonController : MonoBehaviour
     public Button team2help;
     public Button help2team;
     public GameObject team, help;
-    public Button[] playerPlatforms;
-    public Button[] centrePlatforms;
     public Button exitGame, matchingGame;
-    public Text matchingContext;
-    public GameObject dialog;
+    public TextMeshProUGUI matchingContext;
+
     public Button searchPeople, acceptInv, rejectInv;
     public Button destroyTeam, leaveTeam;
     public Button items;
@@ -26,6 +25,12 @@ public class ButtonController : MonoBehaviour
         team2help.onClick.AddListener(swapScene);
         help2team.onClick.AddListener(asd);
         leaveTeam.onClick.AddListener(LeaveTeam);
+        matchingGame.onClick.AddListener(OnClickMatching);
+        closeGame.onClick.AddListener(closeApp);
+    }
+    public void closeApp()
+    {
+        Application.Quit();
     }
     public void LeaveTeam()
     {
@@ -51,6 +56,7 @@ public class ButtonController : MonoBehaviour
     }
     public void OnClickMatching()
     {
+        Debug.Log("Clicked Match");
         if (isleader)
         {
             if (isMatching)
@@ -70,12 +76,11 @@ public class ButtonController : MonoBehaviour
     {
         networkManager.SendMessage("SendStartMatch");
         matchingContext.text = "Stop Matching";
-        dialog.transform.GetComponent<CanvasGroup>().alpha = 1;
     }
     void StopMatch()
     {
         networkManager.SendMessage("SendStopMatch");
         matchingContext.text = "Start Matching";
-        dialog.transform.GetComponent<CanvasGroup>().alpha = 0;
+
     }
 }

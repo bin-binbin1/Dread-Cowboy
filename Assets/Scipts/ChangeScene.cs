@@ -15,15 +15,15 @@ public class ChangeScene : MonoBehaviour
     {
         startGameButton.onClick.AddListener(Click);
     }
-    private void Click()
+    public void Click()
     {
-        changeCoroutine();
+        StartCoroutine(changeCoroutine());
     }
 
     private IEnumerator changeCoroutine()
     {
         float elapsedTime = 0f;
-        Vector3 initialPosition = backgroundToMove.GetComponent<Transform>().transform.position;
+        Vector3 initialPosition = backgroundToMove.transform.position; // 注意这里的获取方式
 
         while (elapsedTime < timeDuration)
         {
@@ -31,8 +31,11 @@ public class ChangeScene : MonoBehaviour
             float t = elapsedTime / timeDuration;
             float currentMove = Mathf.Lerp(0, moveLength, t);
 
-            // 使用Translate方法平移物体
-            transform.Translate(Vector3.up * currentMove * Time.deltaTime);
+            // 计算新的 Y 坐标
+            float newY = initialPosition.y + currentMove;
+
+            // 使用新的位置更新物体的 Y 坐标
+            backgroundToMove.transform.position = new Vector3(initialPosition.x, newY, initialPosition.z);
 
             // 等待到下一帧
             yield return null;
@@ -41,8 +44,8 @@ public class ChangeScene : MonoBehaviour
             elapsedTime += Time.deltaTime;
         }
 
-        // 确保在timeDuration内移动到指定位置
-        transform.position = initialPosition + Vector3.up * moveLength;
+        // 确保在 timeDuration 内移动到指定位置
+        backgroundToMove.transform.position = new Vector3(initialPosition.x, initialPosition.y + moveLength, initialPosition.z);
 
         SceneManager.LoadScene(nextSceneName);
     }

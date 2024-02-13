@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 public class ClientSocket
 {
@@ -109,6 +110,10 @@ public class ClientSocket
         }
     }
 
+    internal Task<int> ReceiveAsync(byte[] buffer, int received, int v, SocketFlags none)
+    {
+        throw new NotImplementedException();
+    }
 
     public bool connected = false;
 
