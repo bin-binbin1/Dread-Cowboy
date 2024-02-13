@@ -682,6 +682,7 @@ class House implements Runnable{
             temp.append(name);
         }
         for(int i=peopleNum;i<4;i++){
+            players.add(null);
             String name ="人机玩家"+(i-peopleNum+1)+"号";
             int l=name.getBytes().length;
             bytes[t] = (byte)l;

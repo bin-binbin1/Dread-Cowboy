@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="7cdc00d5-fb8f-4f2f-b192-d00282f16179" name="Changes" comment="" />
+    <list default="true" id="7cdc00d5-fb8f-4f2f-b192-d00282f16179" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/Dread-Cowboy.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 2
-}]]></component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
   <component name="ProjectId" id="2bOHfb9Olqf9P4ZhxCrz0Mh1jOE" />
   <component name="ProjectViewState">
     <option name="autoscrollToSource" value="true" />
@@ -21,6 +29,8 @@
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "D:/Dread-Cowboy/server/Server",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -33,6 +43,7 @@
       <option name="presentableId" value="Default" />
       <updated>1706079311425</updated>
       <workItem from="1706079312542" duration="4000" />
+      <workItem from="1707829653280" duration="60000" />
     </task>
     <servers />
   </component>
