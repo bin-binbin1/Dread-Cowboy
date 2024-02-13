@@ -173,12 +173,12 @@ public class ClientAll : MonoBehaviour
     {
         roomid=byte2int(msg,1);
         playerState = state.inGame;
-        testText.text = "匹配成功！正在加载房间……";
+        testText.text = "Success！Loading game……";
         
     }
     private void HandleRoundInfo(byte[] msg)
     {
-        testText.text = "回合开始";
+        testText.text = "Round Start!";
         string st;
         int daoju = msg[1];
         int ptai = msg[2];
@@ -217,14 +217,14 @@ public class ClientAll : MonoBehaviour
     private void HandleMatchStart(byte[] msg)
     {
         playerState = state.matching;
-        testText.text = "匹配中……";
+        testText.text = "Matching……";
         //加载动画
         //改为取消匹配按钮
         // 在这里添加你的代码
     }
     private void HandleGameStart(byte[] msg)
     {
-        testText.text = "游戏开始!";
+        testText.text = "Game Start!";
         gameState.SendMessage("gameStart", msg[1].ToString());
         int wei = 2;
         for (int i = 0; i < 4; i++)
@@ -238,7 +238,7 @@ public class ClientAll : MonoBehaviour
     }
     private void HandleGameOver(byte[] msg)
     {
-        testText.text = "游戏结束!";
+        testText.text = "Game End!";
         teamData.gameEnd();
         gameState.SendMessage("gameEnd");
         // 在这里添加你的代码
@@ -387,7 +387,13 @@ public class ClientAll : MonoBehaviour
         GameObject invite = GameObject.Find("Invite");
         invite.SendMessage("CanInvite", !teamData.isFull());
     }
-
+    public void pe()
+    {
+        playerState = state.matching;
+        byte[] dataToSend= new byte[1024];
+        dataToSend[0] = 10;
+        clientSocket.Send(dataToSend);
+    }
     private string byte2str(byte[] b,int start ,int l)
     {
         byte[] subset = new byte[l];

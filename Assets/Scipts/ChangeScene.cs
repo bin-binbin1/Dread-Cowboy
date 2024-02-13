@@ -11,6 +11,7 @@ public class ChangeScene : MonoBehaviour
     public Button startGameButton;
     public GameObject backgroundToMove;
     public float moveLength;
+    public bool direction_vertical;
     private void Start()
     {
         startGameButton.onClick.AddListener(Click);

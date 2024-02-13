@@ -17,7 +17,7 @@ public class ButtonController : MonoBehaviour
     public Button searchPeople, acceptInv, rejectInv;
     public Button destroyTeam, leaveTeam;
     public Button items;
-    public Button continueGame, closeGame;
+    public Button continueGame, closeGame,peButton;
     private bool isleader=true,isMatching=false;
     // Start is called before the first frame update
     void Start()
@@ -27,6 +27,10 @@ public class ButtonController : MonoBehaviour
         leaveTeam.onClick.AddListener(LeaveTeam);
         matchingGame.onClick.AddListener(OnClickMatching);
         closeGame.onClick.AddListener(closeApp);
+        peButton.onClick.AddListener(() =>
+        {
+            networkManager.SendMessage("pe");
+        });
     }
     public void closeApp()
     {

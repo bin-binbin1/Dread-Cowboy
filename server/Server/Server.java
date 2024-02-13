@@ -285,7 +285,29 @@ public class Server {
             }
 
         };//user special item
-        for(int i=10;i<20;i++){
+        functionArray[10]=(byte[] bytes,Player p) ->{
+            int teamID=p.getId();
+            for(Team team:teamList){
+                if(teamID==team.getTeamID()){
+                    House house=new House(team.getTeamMember(),teamID);
+                    bytes[0]=5;//暂时和人机共用一个api
+                    writeInt(bytes,1,teamID);
+                    for(Player player: team.getTeamMember()){
+                        try {
+                            OutputStream out = player.getSocket().getOutputStream();
+                            out.write(bytes);
+                            out.flush();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                    }
+                    houseManager.submit(house);
+                    break;
+                }
+            }
+        };//PE
+        for(int i=11;i<20;i++){
             int finalI = i;
             functionArray[i]=(byte[] bytes, Player p) -> {
                 System.out.println("我没写function"+ finalI);
@@ -365,7 +387,6 @@ public class Server {
             // 关闭客户端连接
             clientSocket.close();
             removeClient(self);
-            System.out.println("客户端已断开连接");
         } catch (IOException e) {
             e.printStackTrace();
             // 发生异常时也需要从Map中删除连接及其标识
@@ -634,7 +655,7 @@ class House implements Runnable{
                 roundEnd();
                 Thread.sleep(Server.waitingTime);
             }
-            gameEnd();;
+            gameEnd();
         } catch (InterruptedException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -649,13 +670,23 @@ class House implements Runnable{
         OutputStream out;
         int t=2;
         StringBuilder temp= new StringBuilder();
+        int peopleNum=0;
         for (Player player : players){
+            peopleNum++;
             player.setRoomid(teamID);
             String name= player.getName();
             int l=name.getBytes().length;
             bytes[t]=(byte) l;
             Server.writeString(bytes,t+1,name);
             t+=1+l;
+            temp.append(name);
+        }
+        for(int i=peopleNum;i<4;i++){
+            String name ="人机玩家"+(i-peopleNum+1)+"号";
+            int l=name.getBytes().length;
+            bytes[t] = (byte)l;
+            Server.writeString(bytes,t+1,name);
+            t+=l+1;
             temp.append(name);
         }
         System.out.println(temp);
