@@ -14,8 +14,8 @@ public class ButtonController : MonoBehaviour
     public Button exitGame, matchingGame;
     public TextMeshProUGUI matchingContext;
 
-    public Button searchPeople, acceptInv, rejectInv;
-    public Button destroyTeam, leaveTeam;
+    public Button acceptInv, rejectInv;
+    public Button leaveTeam;
     public Button items;
     public Button continueGame, closeGame,peButton;
     private bool isleader=true,isMatching=false;
@@ -31,6 +31,10 @@ public class ButtonController : MonoBehaviour
         {
             networkManager.SendMessage("pe");
         });
+        acceptInv.onClick.AddListener(() =>
+        {
+            networkManager.SendMessage("Agree");
+        });
     }
     public void closeApp()
     {
@@ -38,7 +42,7 @@ public class ButtonController : MonoBehaviour
     }
     public void LeaveTeam()
     {
-        networkManager.SendMessage("DissolveTeam");
+        networkManager.SendMessage("leave");
     }
     void swapScene()
     {

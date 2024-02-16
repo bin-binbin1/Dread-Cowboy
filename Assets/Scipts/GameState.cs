@@ -100,6 +100,7 @@ public class GameState : MonoBehaviour
     }
     public void gameStart(string message)
     {
+        settlement.SetActive(false);
         teamButtons.SetActive(false);
         foreach (var texts in goldCount)
         {
@@ -251,6 +252,10 @@ public class GameState : MonoBehaviour
     }
     public void gameEnd()
     {
+        for (int i = 0; i < 4; i++)
+        {
+            platformPositions[i].position = positions[i];
+        }
         teamButtons.SetActive(true );
         for (int i = 0; i < 4; i++)
         {
@@ -285,7 +290,6 @@ public class GameState : MonoBehaviour
     }
     private void swapScore(int i,int j)
     {
-
         Vector3 t = ScoreHead[i].transform.position;
         ScoreHead[i].transform.position = ScoreHead[j].transform.position;
         ScoreHead[j].transform.position = t;

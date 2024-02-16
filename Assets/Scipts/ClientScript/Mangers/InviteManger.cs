@@ -1,57 +1,47 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class InviteManger : MonoBehaviour
 {
-    public GameObject friendname;
-    bool isfull = false;
     public GameObject networkManager;
-    InputField tt;
-    GameObject info;
+    public TMP_InputField friendID;
+    public TextMeshProUGUI info;
     int lastid=0;
-    public float timer = 100f;
-
-    void Start()
+    public float timer = 0f;
+    private void Start()
     {
-        info = GameObject.Find("InviteInfo");
+        GetComponent<Button>().onClick.AddListener(() =>
+        {
+            networkManager.SendMessage("IsFull");
+        });
     }
-
     void Update()
     {
-        timer -= Time.deltaTime;
+        timer += Time.deltaTime;
     }
-
-    void CanInvite(bool l)
+    public void CanInvite(bool isfull)
     {
-        isfull = l;
-    }
-
-    public void InviteFriend()
-    {
-        info.GetComponent<Text>().text = "";
-        networkManager.SendMessage("IsFull");
         if (!isfull)
         {
-            tt = friendname.GetComponentInChildren<InputField>();
-            if (tt.text.Length!=0)
-            {
-                int frid=0;
 
-                Debug.Log(tt.text);
-                if (!int.TryParse(tt.text,out frid))
-                    info.GetComponent<Text>().text = "请输入ID";
+            if (friendID.text.Length != 0)
+            {
+                int frid;
+                if (!int.TryParse(friendID.text,out frid))
+                    info.text = "请输入数字";
                 else
                 {
-                    frid = int.Parse(tt.text);Debug.Log(frid);
-                    if (lastid == frid && timer != 0)
+                    frid = int.Parse(friendID.text); Debug.Log(frid);
+                    if (lastid == frid && timer <10f)
                     {
-                        info.GetComponent<Text>().text = "10s内只能邀请该玩家一次";
+                        info.text = "10s内只能邀请该玩家一次";
                     }
                     else
                     {
-                        timer = 10f;
+                        timer = 0f;
                         networkManager.SendMessage("InviteFriend", frid);
                         lastid = frid;
                     }
@@ -60,7 +50,7 @@ public class InviteManger : MonoBehaviour
         }
         else
         {
-            info.GetComponent<Text>().text = "满员了";
+            info.text = "人员已满";
         }
     }
 

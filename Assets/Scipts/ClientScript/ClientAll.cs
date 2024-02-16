@@ -1,13 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using System.Text;
 using System;
 using System.Net;
 using System.Net.Sockets;
-using UnityEngine.UIElements;
-using UnityEngine.XR;
 using TMPro;
 using System.Threading.Tasks;
 
@@ -19,7 +16,7 @@ public class ClientAll : MonoBehaviour
     }
     private const int PORT = 3690;
     public int userId=0;
-    public GameObject gameState;
+    public GameObject gameState,inviteManager;
     int roomid;
     public TeamData teamData;
     private Socket clientSocket;
@@ -27,19 +24,21 @@ public class ClientAll : MonoBehaviour
     private byte[] buffer=new byte[BufferSize];
     public delegate void MessageHandler(byte[] msg);
     public TextMeshProUGUI testText;
-    public GameObject chan;
-    private int inviteLeaderId;
+    public GameObject matchAnime;
+    private int inviteLeaderId,inviteID;
+    private string inviteName;
     // 创建委托数组
     private MessageHandler[] messageHandlers = new MessageHandler[20];
     state playerState,originState;
-    
+    private bool pvp = false;
+    public bool test;
     // Start is called before the first frame update
     public async void Start()
     {
         playerState = state.alone;
         testText.text = "请开始游戏";
         clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        IPAddress ipAddress =System.Net.Dns.GetHostAddresses("whisperworld.cn")[0];
+        IPAddress ipAddress =test?IPAddress.Parse("127.0.0.1"): System.Net.Dns.GetHostAddresses("whisperworld.cn")[0];
         string ip = ipAddress.ToString();
         // 连接
         clientSocket.Connect(ip, PORT);
@@ -52,48 +51,15 @@ public class ClientAll : MonoBehaviour
         messageHandlers[6] = HandleRoundInfo;
         messageHandlers[7] = HandleRoundEnd;
         messageHandlers[8] = HandleInviteReceived;
-
+        messageHandlers[9] = HandleTeamFailure;
         messageHandlers[10] = HandleMatchStart;
         messageHandlers[11] = HandleGameStart;
         messageHandlers[12] = HandleGameOver;
         messageHandlers[13] = HandleMatchStop;
+        messageHandlers[14] = HandleNameChange;
         //clientSocket.BeginReceive(buffer, 0, BufferSize, SocketFlags.None, ReceiveCallback, null);
         await StartReceiving();
     }
-    //public void ReceiveCallback(IAsyncResult ar)
-    //{
-    //    int received = clientSocket.EndReceive(ar);
-
-    //    // 检查是否已接收满1KB的数据
-    //    if (received == BufferSize)
-    //    {
-    //        // 处理接收到的数据
-    //        string data = Encoding.UTF8.GetString(buffer, 0, received);
-    //        testText.text="Received data: " + buffer[0];
-    //        if (buffer[0] < 20)
-    //        {
-    //            messageHandlers[buffer[0]](buffer);
-    //        }
-    //        else
-    //        {
-    //           testText.text=byte2str(buffer,1,8);
-    //        }
-    //        // 清空缓冲区以准备接收下一个数据包
-    //        Array.Clear(buffer, 0, BufferSize);
-    //    }
-
-    //    // 如果还没有接收满1KB的数据，就继续接收
-    //    if (received < BufferSize)
-    //    {
-    //        clientSocket.BeginReceive(buffer, received, BufferSize - received, SocketFlags.None, ReceiveCallback, null);
-    //    }
-    //    else
-    //    {
-    //        // 如果已接收满1KB的数据，就开始接收下一个数据包
-    //        clientSocket.BeginReceive(buffer, 0, BufferSize, SocketFlags.None, ReceiveCallback, null);
-    //    }
-    //}
-
     public async Task StartReceiving()
     {
         while (true)
@@ -101,7 +67,6 @@ public class ClientAll : MonoBehaviour
             try
             {
                 var received = await clientSocket.ReceiveAsync(buffer, SocketFlags.None);
-                Debug.Log($"received:{received}");
                 if (received == BufferSize)
                 {
                     // 处理接收到的数据
@@ -138,31 +103,30 @@ public class ClientAll : MonoBehaviour
     {
         //后面改成消息提示的板子
         ////////////////////////////////////////////
-        GameObject inviteinfo = GameObject.Find("InviteInfo");
+        
         if (msg[1] == 0)
         {
-            inviteinfo.GetComponent<Text>().text = "未找到该用户";
+            testText.text = "未找到该用户";
         }
         else
         {
-            inviteinfo.GetComponent<Text>().text = $"已经向{byte2str(msg, 2, msg[0])}发出邀请";
+            testText.text = $"已经向{byte2str(msg, 2, msg[1])}发出邀请";
         }
     }
     private void HandleTeamJoin(byte[] msg)
     {
-        string name = byte2str(msg, 2, msg[1]);
+        string name = byte2str(msg, 6, msg[5]);
+        Debug.Log("name=" + name);
         playerState = userId==inviteLeaderId? state.leader:state.inTeam;
-        teamData.JoinTeam(name);
+        teamData.JoinTeam(name,byte2int(msg,1));
     }
     private void HandleTeamLeave(byte[] msg)
     {
-        string name = byte2str(msg, 2, msg[1]);
-        if (teamData.HaveLeave(name))
+       
+        if (teamData.HaveLeave(byte2int(msg,1)))
         {
             playerState = state.alone;
         }
-        
- 
     }
     private void HandleTeamDisband(byte[] msg)
     {
@@ -198,33 +162,32 @@ public class ClientAll : MonoBehaviour
         Debug.Log("选择" + st);
         gameState.SendMessage("getChoices", st);
     }
+    private void HandleTeamFailure(byte[] msg)
+    {
+        playerState = state.alone;
+        inviteLeaderId = userId;
+        testText.text = "进入队伍失败，队伍可能满了，或者已经开始匹配";
+    }
     private void HandleInviteReceived(byte[] msg)
     {
         // if 没有邀请
-        if (true)
+        if (playerState!=state.matching&&playerState!=state.inGame)
         {
-            inviteLeaderId =byte2int(msg,1);
-            Debug.Log("leader" + inviteLeaderId);
-       
-            string invitename= byte2str(msg, 6, msg[5]);
-            object[] o = new object[2];
-            o[0] = inviteLeaderId;
-            o[1] = invitename;
-            chan.SendMessage("SpawnObj", o);
+            inviteID =byte2int(msg,1);
+            inviteName= byte2str(msg, 6, msg[5]);
+            testText.text = $"{inviteName}向你发出邀请";
         }
         
     }
     private void HandleMatchStart(byte[] msg)
     {
         playerState = state.matching;
-        testText.text = "Matching……";
-        //加载动画
-        //改为取消匹配按钮
-        // 在这里添加你的代码
+        testText.text = "匹配中";
+        matchAnime.SetActive(true);
     }
     private void HandleGameStart(byte[] msg)
     {
-        testText.text = "Game Start!";
+        testText.text = "游戏即将开始!";
         gameState.SendMessage("gameStart", msg[1].ToString());
         int wei = 2;
         for (int i = 0; i < 4; i++)
@@ -238,16 +201,20 @@ public class ClientAll : MonoBehaviour
     }
     private void HandleGameOver(byte[] msg)
     {
-        testText.text = "Game End!";
+        testText.text = "游戏结束！";
         teamData.gameEnd();
         gameState.SendMessage("gameEnd");
-        // 在这里添加你的代码
     }
     private void HandleMatchStop(byte[] msg)
     {
         testText.text = "取消了匹配";
-        // 在这里添加你的代码
+        matchAnime.SetActive(false);
     }
+    private void HandleNameChange(byte[] msg)
+    {
+        teamData.ChangeName(byte2int(msg, 1), byte2str(msg, 6, msg[5]));
+    }
+
     void OnApplicationQuit()
     {
         if (clientSocket != null && clientSocket.Connected)
@@ -260,12 +227,8 @@ public class ClientAll : MonoBehaviour
     public void SendName(string name)
     {
         byte[] dataToSend = new byte[BufferSize];
-        teamData.SetMyName(name);
-        teamData.SetLeader(name);
-        str2byte(dataToSend,1,name);
-        Debug.Log(dataToSend[0]);
-        Debug.Log(dataToSend[1]);
-        Debug.Log(dataToSend[2]);
+        dataToSend[0] = 1;
+        dataToSend[1]=(byte)str2byte(dataToSend,2,name);
         clientSocket.Send(dataToSend);
     }
 
@@ -308,6 +271,7 @@ public class ClientAll : MonoBehaviour
         dataToSend[0] = 6;
         int2byte(dataToSend,1,inviteLeaderId);
         clientSocket.Send(dataToSend);
+        pvp = true;
         Debug.Log("匹配");
     }
 
@@ -324,51 +288,61 @@ public class ClientAll : MonoBehaviour
     /// <param name="id"></param>
     public void InviteFriend(int id)
     {
-        byte[]dataToSend=new byte[1024];
+        Debug.Log("邀请的id"+id);
+        byte[] dataToSend=new byte[1024];
         dataToSend[0] = 2;
         int2byte(dataToSend,1,id);
         clientSocket.Send(dataToSend);
-        Debug.Log(dataToSend[1]);
-        Debug.Log(dataToSend[2]);
-        Debug.Log(dataToSend[3]);
-        Debug.Log(dataToSend[4]);
     }
     /// <summary>
     /// 同意邀请
     /// </summary>
-    public void Agree(object[] obj)
+    public void Agree()
     {
+        if (inviteID == 0)
+            return;
+        if(playerState==state.inTeam)
+        {
+            LeaveTeam();
+        }else if (playerState == state.leader)
+        {
+            DissolveTeam();
+        }
         playerState = state.inTeam;
-        int id=(int)obj[0];
-        string leadername = (string)obj[1];
+        
         byte[] dataToSend = new byte[1024];
         dataToSend[0] = 3;
         dataToSend[1]= 1;
-        inviteLeaderId = id;
-        int2byte(dataToSend, 2, id);
+        inviteLeaderId = inviteID;
+        int2byte(dataToSend, 2, inviteID);
         clientSocket.Send(dataToSend);
-        Debug.Log("接受");
-        Debug.Log(dataToSend[1]);
-        Debug.Log(dataToSend[2]);
-        Debug.Log(dataToSend[3]);
-        Debug.Log(dataToSend[4]);
-        teamData.SetLeader(leadername);
+        teamData.SetLeader(inviteName);
+        inviteID= 0;
     }
     /// <summary>
     /// 拒绝
     /// </summary>
     public void Refuse(int id)
-    {
+    { 
+        
         byte[] dataToSend=new byte[1024];
         dataToSend[0] = 3;
         dataToSend[1] = 0;
         int2byte(dataToSend, 1, id);
         clientSocket.Send(dataToSend);
-        Debug.Log("拒绝");
-        Debug.Log(dataToSend[1]);
-        Debug.Log(dataToSend[2]);
-        Debug.Log(dataToSend[3]);
-        Debug.Log(dataToSend[4]);
+        inviteID=0;
+        testText.text = "已拒绝";
+    }
+    public void leave()
+    {
+        if(playerState==state.inTeam)
+        {
+            LeaveTeam();
+        }
+        else if(playerState == state.leader)
+        {
+            DissolveTeam();
+        }
     }
     /// <summary>
     /// 是否是队长
@@ -384,15 +358,30 @@ public class ClientAll : MonoBehaviour
 
     public void IsFull()
     {
-        GameObject invite = GameObject.Find("Invite");
-        invite.SendMessage("CanInvite", !teamData.isFull());
+       
+        inviteManager.SendMessage("CanInvite", teamData.isFull());
     }
     public void pe()
     {
+        pvp = false;
         playerState = state.matching;
         byte[] dataToSend= new byte[1024];
         dataToSend[0] = 10;
         clientSocket.Send(dataToSend);
+    }
+    public void playAgain()
+    {
+        if(inviteLeaderId == userId)
+        {
+            if(pvp)
+            {
+                SendStartMatch();
+            }
+            else
+            {
+                pe();
+            }
+        }
     }
     private string byte2str(byte[] b,int start ,int l)
     {
@@ -418,7 +407,7 @@ public class ClientAll : MonoBehaviour
     private int str2byte(byte[] bytes, int start, string val)
     {
         byte[] b=Encoding.UTF8.GetBytes(val);
-        Array.Copy(b, 0, bytes, start + 1, b.Length);
-        return start + 1 + b.Length;
+        Array.Copy(b, 0, bytes, start, b.Length);
+        return b.Length;
     }
 }

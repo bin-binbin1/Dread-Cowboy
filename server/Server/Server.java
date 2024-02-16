@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -13,10 +14,10 @@ public class Server {
 
     private static final int PORT = 3690;
     private static final  int BufferSize = 1024;
-    static final int oneRoundTime=15000;//10s ==10000ms 一回合持续时间
+    static final int oneRoundTime=7000;//10s ==10000ms 一回合持续时间
     static final int waitingTime=5000;//5s == 5000ms 回合结算等待时间
-    static final int startTime=2000;//5s == 2000ms 游戏开始前等待时间
-    static final int endTime=5000;//5s == 2000ms 游戏结束前等待时间
+    static final int startTime=2000;//2s == 2000ms 游戏开始前等待时间
+    static final int endTime=2000;//2s == 2000ms 游戏结束前等待时间
     static final int rounds=6;//6;//回合数
     static final int items=2+1;//两个物品
     private static final LinkedBlockingDeque<Team> queueOne = new LinkedBlockingDeque<Team>();
@@ -40,9 +41,23 @@ public class Server {
             }
         };//test Function
         functionArray[1]=(byte[] bytes,Player p) ->{
+            bytes[0]=14;
             try {
-                p.setName(getString(bytes,2,bytes[1]));
-            } catch (UnsupportedEncodingException e) {
+                String name=getString(bytes,2,bytes[1]);
+                writeInt(bytes,1,p.getId());
+                bytes[5]=(byte) writeString(bytes,6,name);
+                p.setName(name);
+                for (Team team: teamList) {
+                    if(team.getTeamID()==p.getTeamID()){
+                        OutputStream out;
+                        for(Player player:team.getTeamMember()){
+                            out=player.getSocket().getOutputStream();
+                            out.write(bytes);
+                            out.flush();
+                        }
+                    }
+                }
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         };//getName
@@ -52,34 +67,31 @@ public class Server {
             boolean find=false;
             try {
                 for (Player player :playerList) {
-                    if(player.getId()==id){
-                            boolean a=false;
-                            for(Team team:teamList){
-                                if(team.getTeamID()==id){
-                                    a=true;
-                                    break;
-                                }
-                            }
-                            if(!a){
+                    if(player.getId()==id) {
+                        boolean a = false;
+                        for (Team team : teamList) {
+                            if (team.getTeamID() == id) {
+                                a = true;
                                 break;
                             }
-                            find=true;
-                            OutputStream out=p.getSocket().getOutputStream();
-                            bytes[0]=1;
-                            String name= player.getName();
-                            bytes[1]=(byte) (name.getBytes().length);
-                            writeString(bytes,2,name);
-                            out.write(bytes);
-                            out.flush();
-                            out =player.getSocket().getOutputStream();
-                            bytes[0]=8;
-                            writeInt(bytes,1,player.getId());
-                            name = p.getName();
-                            bytes[5]=(byte) (name.getBytes().length);
-                            writeString(bytes,6,name);
-                            out.write(bytes);
-                            out.flush();
+                        }
+                        if (!a) {
                             break;
+                        }
+                        find = true;
+                        OutputStream out = p.getSocket().getOutputStream();
+                        bytes[0] = 1;
+
+                        bytes[1] = (byte) writeString(bytes, 2, player.getName());
+                        out.write(bytes);
+                        out.flush();
+                        out = player.getSocket().getOutputStream();
+                        bytes[0] = 8;
+                        writeInt(bytes, 1, p.getId());
+                        bytes[5] = (byte) writeString(bytes, 6, p.getName());
+                        out.write(bytes);
+                        out.flush();
+                        break;
                     }
                 }
                 if(!find){
@@ -98,7 +110,7 @@ public class Server {
                 int teamID=getInt(bytes,2);
                 for (Team team: teamList) {
                     if(team.getTeamID()==teamID){
-                        if(team.getTeamMember().size()>3||team.isMatching()) {
+                        if(team.getTeamMember().size()>3||team.isMatching()||team.getTeamMember().contains(p)) {
                             System.out.println("队伍满或队伍已开始匹配");
                             return;
                         }
@@ -108,30 +120,25 @@ public class Server {
                         try {
                             OutputStream out=p.getSocket().getOutputStream();
                             for(Player player : team.getTeamMember()){
-                                bytes[1]=(byte)(player.getName().getBytes().length);
-                                writeString(bytes,2,player.getName());
+                                writeInt(bytes,1,player.getId());
+                                bytes[5]=(byte)(player.getName().getBytes().length);
+                                writeString(bytes,6,player.getName());
                                 out.write(bytes);
                                 out.flush();
                                 Thread.sleep(100);
                             }
-                            bytes[1]=(byte) (p.getName().getBytes().length);
-                            writeString(bytes,2,p.getName());
+                            writeInt(bytes,1, p.getId());
+                            bytes[5]= (byte) writeString(bytes,6,p.getName());
                             for (Player player : team.getTeamMember()) {
                                 out = player.getSocket().getOutputStream();
                                 out.write(bytes);
                                 out.flush();
                             }
-                            for(Player player : team.getTeamMember()){
-                                bytes[1]=(byte)(player.getName().getBytes().length);
-                                writeString(bytes,2,player.getName());
-                            }
                         }catch (IOException | InterruptedException e) {
                             throw new RuntimeException(e);
                         }
-
                         team.addPlayer(p);
-
-
+                        p.setTeamID(team.getTeamID());
                         teamList.remove(new Team(p.getId(), null));
                         break;
                     }
@@ -141,19 +148,13 @@ public class Server {
             }
         };//accept invitation
         functionArray[4]=(byte[] bytes,Player p) -> {
-            int teamID=getInt(bytes,1);
+            int teamID=p.getTeamID();
             bytes[0]=3;
-            String name=p.getName();
-            bytes[1]=(byte) (name.getBytes().length);
-            try {
-                writeString(bytes,2,name);
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException(e);
-            }
+            writeInt(bytes,1,p.getId());
             for (Team team:teamList) {
                 if(team.getTeamID()==teamID){
                     team.removePlayer(p);
-
+                    p.setTeamID(p.getId());
                     for (Player player:team.getTeamMember()) {
                         try {
                             OutputStream out=player.getSocket().getOutputStream();
@@ -180,6 +181,7 @@ public class Server {
                     CopyOnWriteArrayList<Player> players=team.getTeamMember();
                     for(int i=1;i<players.size();i++){
                          Player player=players.get(i);
+                         player.setTeamID(player.getId());
                         CopyOnWriteArrayList<Player> currentTeamMember=new CopyOnWriteArrayList<>();
                         currentTeamMember.add(player);
                         teamList.add(new Team(p.getId(), currentTeamMember));
@@ -386,7 +388,6 @@ public class Server {
 
             // 关闭客户端连接
             clientSocket.close();
-            removeClient(self);
         } catch (IOException e) {
             e.printStackTrace();
             // 发生异常时也需要从Map中删除连接及其标识
@@ -404,21 +405,24 @@ public class Server {
 
     private static void removeClient(Player player) {
         // 从Map中删除指定连接及其标识
-        if(player.getRoomid()!=0){//离开房间
+        if(player.getRoomid()!=0){
             for (House h : houseList) {
-                if(h.getHouseID()== player.getRoomid()){
+                if (h.getHouseID() == player.getRoomid()) {
                     h.leave(player.getId());
                     break;
                 }
             }
         }
-        playerList.remove(player);
-        if(teamList.contains(new Team(player.getId(), null))) {
-            functionArray[5].accept(new byte[1024],player);
-        }else{
-            player.setSocket(null);
-            functionArray[4].accept(new byte[1024],player);
+        for(Team team : teamList){
+            if(team.getTeamID()==player.getTeamID()){
+                if(team.getTeamID()==player.getId()){
+                    functionArray[5].accept(new byte[1024],player);
+                }else{
+                    functionArray[4].accept(new byte[1024],player);
+                }
+            }
         }
+        playerList.remove(player);
         System.out.println("客户端已从Map中移除，标识为：" + player.getId());
     }
 
@@ -507,12 +511,13 @@ public class Server {
         buf[offset + 2] = (byte) (value >>> 8);
         buf[offset + 3] = (byte) value;
     }
-    public static void writeString(byte[] buf, int offset, String value) throws UnsupportedEncodingException {
-        byte[] strBytes = value.getBytes("UTF-8");
+    public static int writeString(byte[] buf, int offset, String value) throws UnsupportedEncodingException {
+        byte[] strBytes = value.getBytes(StandardCharsets.UTF_8);
         System.arraycopy(strBytes, 0, buf, offset, strBytes.length);
+        return strBytes.length;
     }
     public static String getString(byte[] buf, int offset, int length) throws UnsupportedEncodingException {
-        return new String(buf, offset, length, "UTF-8");
+        return new String(buf, offset, length, StandardCharsets.UTF_8);
     }
     public static int getInt(byte[] buf, int offset) {
         return ((buf[offset] & 0xFF) << 24) | ((buf[offset + 1] & 0xFF) << 16) | ((buf[offset + 2] & 0xFF) << 8) | (buf[offset + 3] & 0xFF);
@@ -533,6 +538,7 @@ class Player{
         this.socket=socket1;
         this.name=name;
         roomid=0;
+        teamID=id;
     }
     public int getId() {
         return id;
@@ -563,18 +569,22 @@ class Player{
         return id == p.id;
     }
     private int id;
-
     public int getRoomid() {
         return roomid;
     }
-
     public void setRoomid(int roomid) {
         this.roomid = roomid;
     }
-
     private Socket socket;
     private String name;
     private int roomid;
+    public int getTeamID() {
+        return teamID;
+    }
+    public void setTeamID(int teamID) {
+        this.teamID = teamID;
+    }
+    private int teamID;
 }
 class Team{
     private int teamID;
@@ -675,18 +685,16 @@ class House implements Runnable{
             peopleNum++;
             player.setRoomid(teamID);
             String name= player.getName();
-            int l=name.getBytes().length;
+            int l=Server.writeString(bytes,t+1,name);
             bytes[t]=(byte) l;
-            Server.writeString(bytes,t+1,name);
             t+=1+l;
             temp.append(name);
         }
         for(int i=peopleNum;i<4;i++){
             players.add(null);
             String name ="人机玩家"+(i-peopleNum+1)+"号";
-            int l=name.getBytes().length;
+            int l=Server.writeString(bytes,t+1,name);
             bytes[t] = (byte)l;
-            Server.writeString(bytes,t+1,name);
             t+=l+1;
             temp.append(name);
         }

@@ -3,38 +3,38 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 public class NameManger : MonoBehaviour
 {
-    public InputField PlayerName;//用户名输入框
-    public Text stateTxt;//用户名是否输入状态文本
-    private GameObject networkManager;
+    public TMP_InputField PlayerName;//用户名输入框
+    public TextMeshProUGUI testLog;//用户名是否输入状态文本
+    public GameObject networkManager;
+    private void Start()
+    {
+        GetComponent<Button>().onClick.AddListener(setName);
+    }
     /// <summary>
     /// 初始化输入框
     /// </summary>
-    void Start()
-    {
-        PlayerName = GameObject.Find("PlayerName").GetComponent<InputField>();
-    }
-
     /// <summary>
     /// 绑定到登录按钮上
     /// </summary>
     public void setName()
     {
+        Debug.Log($"尝试改为{PlayerName.text}");
         if (PlayerName.text.Length>15)
         {
-            stateTxt.text = "用户名长度不能超过15";
+            testLog.text = "用户名长度不能超过15";
             
         }
         else if (PlayerName.text.Length > 0)
         {
-            Debug.Log("用户名：" + PlayerName.text);
             networkManager.SendMessage("SendName", PlayerName.text);
         }
         else
         {
-            stateTxt.text = "请输入用户名";
+            testLog.text = "请输入用户名";
         }
     }
 }
