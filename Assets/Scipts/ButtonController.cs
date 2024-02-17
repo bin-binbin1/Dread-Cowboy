@@ -17,7 +17,7 @@ public class ButtonController : MonoBehaviour
     public Button acceptInv, rejectInv;
     public Button leaveTeam;
     public Button items;
-    public Button continueGame, closeGame,peButton;
+    public Button closeGame,peButton;
     private bool isleader=true,isMatching=false;
     // Start is called before the first frame update
     void Start()

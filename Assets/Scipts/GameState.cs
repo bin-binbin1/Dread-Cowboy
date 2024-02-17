@@ -37,7 +37,7 @@ public class GameState : MonoBehaviour
         playAgain.onClick.AddListener(() =>
         {
             settlement.SetActive(false);
-            networkManager.SendMessage("SendStartMatch");
+            networkManager.SendMessage("playAgain");
             //¶¯»­
         });
         closeWindow.onClick.AddListener(() =>
