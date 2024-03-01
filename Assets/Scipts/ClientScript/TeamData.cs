@@ -21,7 +21,7 @@ public class TeamData : MonoBehaviour
         currentPlayerNum = 1;
         for(int i = 0; i < players.Length; i++)
         {
-            text[i] = players[i].GetComponentInChildren<TextMeshProUGUI>();
+            text[i] = cowBoys[i].GetComponentInChildren<TextMeshProUGUI>();
             if (i == 0)
             {
                 setplayerActive(i, true);
