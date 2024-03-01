@@ -14,7 +14,7 @@ public class Server {
 
     private static final int PORT = 3690;
     private static final  int BufferSize = 1024;
-    static final int oneRoundTime=7000;//10s ==10000ms 一回合持续时间
+    static final int oneRoundTime=8000;//10s ==10000ms 一回合持续时间
     static final int waitingTime=5000;//5s == 5000ms 回合结算等待时间
     static final int startTime=2000;//2s == 2000ms 游戏开始前等待时间
     static final int endTime=2000;//2s == 2000ms 游戏结束前等待时间

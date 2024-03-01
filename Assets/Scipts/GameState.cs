@@ -81,8 +81,16 @@ public class GameState : MonoBehaviour
                 if (canMove)
                 {
                     networkManager.SendMessage("makeChoice", index + 1);
-                    platformPositions[playerPosition].position = positions[index];
-                    Debug.Log($"origin index:{playerPosition} "+index+1+" choice");
+                    if (index < 4)
+                    {
+                        Vector3 offset = positions[index];
+                        offset.x += index % 2 == 0 ?150:-150;
+                        platformPositions[playerPosition].position = offset;
+                    }
+                    else
+                    {
+                        platformPositions[playerPosition].position = positions[index];
+                    }
                 }
             };
         }
