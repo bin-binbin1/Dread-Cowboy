@@ -208,6 +208,7 @@ public class GameState : MonoBehaviour
 
                 if (i>=4)
                 {//ÍÚ
+                    Debug.Log(i);
                     scores[index] = A[i - 4] * round + B[i - 4] ;
                     if (itemType == 3&& useItem==index)
                     {
@@ -307,6 +308,9 @@ public class GameState : MonoBehaviour
         t = ScoreScore[i].transform.position;
         ScoreScore[i].transform.position = ScoreScore[j].transform.position;
         ScoreScore[j].transform.position = t;
+        int a = scores[i];
+        scores[i] = scores[j];
+        scores[j] = a;
     }
     
 }

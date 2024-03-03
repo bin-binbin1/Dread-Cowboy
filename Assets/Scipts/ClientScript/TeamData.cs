@@ -42,6 +42,7 @@ public class TeamData : MonoBehaviour
         myID = id;
         teamid = myID;
         text[0].text = $"ХЃза{myID}";
+        playername[0] = text[0].text;
         playerIDs[0] = myID;
     }
     public void SetLeader(string name)

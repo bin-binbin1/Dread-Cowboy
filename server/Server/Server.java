@@ -295,6 +295,8 @@ public class Server {
                     bytes[0]=5;//暂时和人机共用一个api
                     writeInt(bytes,1,teamID);
                     for(Player player: team.getTeamMember()){
+                        if(player==null)
+                            continue;
                         try {
                             OutputStream out = player.getSocket().getOutputStream();
                             out.write(bytes);
@@ -674,6 +676,7 @@ class House implements Runnable{
     private void gameStart() throws IOException {
         bytes[0]=11;
         List<Player> arrayList = new ArrayList<>(players);
+        arrayList.removeIf(Objects::isNull);
         Collections.shuffle(arrayList);
         players.clear();
         players.addAll(arrayList);
@@ -702,7 +705,6 @@ class House implements Runnable{
         t=1;
         for (Player player : players) {
             if(player==null) {
-                System.out.println("有玩家中途退出");
                 continue;
             }
             bytes[1]=(byte) t;
