@@ -18,7 +18,7 @@ public class Server {
     static final int waitingTime=5000;//5s == 5000ms 回合结算等待时间
     static final int startTime=2000;//2s == 2000ms 游戏开始前等待时间
     static final int endTime=2000;//2s == 2000ms 游戏结束前等待时间
-    static final int rounds=6;//6;//回合数
+    static final int rounds=2;//6;//回合数
     static final int items=2+1;//两个物品
     private static final LinkedBlockingDeque<Team> queueOne = new LinkedBlockingDeque<Team>();
     private static final LinkedBlockingDeque<Team> queueTwo = new LinkedBlockingDeque<Team>();

@@ -4422,10 +4422,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u53EC\u5524\u4E00\u5934\u725B\uFF0C\u4E0E\u73A9\u5BB6\u540C\u65F6\u8FDB\u884C\u672C\u8F6E\u56DE\u5408\u7684\u62A2\u593A\u3002\u4EC5\u80FD\u53BB\u516C\u5171\u5E73\u53F0\u62A2\u9053\u5177/\u91D1\u5757\u3001\u4E0D\u80FD\u53BB\u73A9\u5BB6\u5E73\u53F0\u3002"
+  m_text: "\u53EC\u5524\u4E00\u5934\u725B\uFF0C\u4E0E\u73A9\u5BB6\u540C\u65F6\u8FDB\u884C\u672C\u8F6E\u56DE\u5408\u7684\u62A2\u593A\u3002\u4EC5\u80FD\u53BB\u516C\u5171\u5E73\u53F0\u62A2\u9053\u5177/\u91D1\u5757\u3001\u4E0D\u80FD\u53BB\u73A9\u5BB6\u5E73\u53F0\u3002(\u6682\u672A\u5F00\u653E\u4F7F\u7528)"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 31fcce04d45d68d43816c9369c24de71, type: 2}
-  m_sharedMaterial: {fileID: 8547761180103948959, guid: 31fcce04d45d68d43816c9369c24de71, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 33b247a92b968a141aa5589a0dcc8adc, type: 2}
+  m_sharedMaterial: {fileID: 3444168042514587187, guid: 33b247a92b968a141aa5589a0dcc8adc, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -15419,6 +15419,13 @@ MonoBehaviour:
   - {fileID: 385559363}
   - {fileID: 898486450}
   - {fileID: 670524734}
+  Door: {fileID: 21300000, guid: efa001387e2cda149996f5a838eb153b, type: 3}
+  originDoor: {fileID: 0}
+  homes:
+  - {fileID: 124728178}
+  - {fileID: 284906219}
+  - {fileID: 1421652051}
+  - {fileID: 1600877109}
 --- !u!4 &1857457477
 Transform:
   m_ObjectHideFlags: 0

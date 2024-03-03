@@ -31,9 +31,12 @@ public class GameState : MonoBehaviour
     public GameObject[] ScoreHead;
     public TextMeshProUGUI[] ScoreName, ScoreScore;
     private Vector3[] originHead=new Vector3[4],originName=new Vector3[4],originScore = new Vector3[4];
+    public Sprite Door,originDoor;
+    public Image[] homes;
     // Start is called before the first frame update
     void Start()
     {
+        originDoor = homes[0].sprite;
         playAgain.onClick.AddListener(() =>
         {
             settlement.SetActive(false);
@@ -163,15 +166,17 @@ public class GameState : MonoBehaviour
             specialItems[itemType-1].SetActive(true);
             
         }
-        if (lastItemType =='1')
+        if (lastItemType ==1)
         {//牛
             if (useItem == playerPosition)
             {
                 //可以用牛////////////////////////////////
             }
-        }else if (lastItemType =='2')
+        }else if (lastItemType ==3)
         {
+            Debug.Log(useItem);
             playerPlatforms[useItem].gameObject.SetActive(false);
+            homes[useItem].sprite = Door;
         }
         for (int i = 0; i < platforms.Length; i++)
         {
@@ -210,7 +215,7 @@ public class GameState : MonoBehaviour
                 {//挖
                     Debug.Log(i);
                     scores[index] = A[i - 4] * round + B[i - 4] ;
-                    if (itemType == 3&& useItem==index)
+                    if (itemType == 2&& useItem==index)
                     {
                         scores[index] += (A[i - 4] * round + B[i - 4])/2;
                     }
@@ -228,9 +233,14 @@ public class GameState : MonoBehaviour
                 //conflicts//////////////////////////////////////
             }
         }
+        if (lastItemType == 3)
+        {
+            playerPlatforms[useItem].gameObject.SetActive(true);
+            homes[useItem].sprite = originDoor;
+        }
         if (platforms[platform]==1)
         {
-            useItem = getIndexFromString(message, platform);
+            useItem = getIndexFromString(message, platform+1);
                 
         }
         for(int i=0;i<scores.Length;i++)
@@ -239,10 +249,7 @@ public class GameState : MonoBehaviour
             lastScores[i] = scores[i];
             goldCount[i].text = $"金块:{scores[i]}$";
         }
-        if (lastItemType == '2')
-        {
-            playerPlatforms[useItem].gameObject.SetActive(true);
-        }
+        
         lastItemType = itemType;
         
     }
@@ -277,15 +284,36 @@ public class GameState : MonoBehaviour
             ScoreScore[i].text = scores[i].ToString();
         }
         //show scores;
+        int[] rank= new int[4] { 0,1,2,3};
         for(int i=0;i<4;i++)
         {
             for(int j = i + 1; j < 4; j++)
             {
                 if (scores[i] < scores[j])
                 {
-                    swapScore(i,j);
+                    int a = scores[i];
+                    scores[i] = scores[j];
+                    scores[j] = a;
+                    a=rank[i];
+                    rank[i] = rank[j];
+                    rank[j] = a;
                 }
             }
+        }
+        Vector3[] tt1=new Vector3[4];
+        Vector3[] tt2=new Vector3[4];
+        Vector3[] tt3=new Vector3[4];
+        for(int i=0;i<4; i++)
+        {
+            tt1[i] = ScoreHead[i].transform.position;
+            tt2[i] = ScoreName[i].transform.position;
+            tt3[i] = ScoreScore[i].transform.position;
+        }
+        for(int i = 0; i < 4; i++)
+        {
+            ScoreHead[rank[i]].transform.position = tt1[i];
+            ScoreName[rank[i]].transform.position= tt2[i];
+            ScoreScore[rank[i]].transform.position = tt3[i];
         }
         settlement.SetActive(true );
         foreach (var texts in goldCount)
@@ -296,21 +324,6 @@ public class GameState : MonoBehaviour
         {
             texts.gameObject.SetActive(false);
         }
-    }
-    private void swapScore(int i,int j)
-    {
-        Vector3 t = ScoreHead[i].transform.position;
-        ScoreHead[i].transform.position = ScoreHead[j].transform.position;
-        ScoreHead[j].transform.position = t;
-        t = ScoreName[i].transform.position;
-        ScoreName[i].transform.position = ScoreName[j].transform.position;
-        ScoreName[j].transform.position = t;
-        t = ScoreScore[i].transform.position;
-        ScoreScore[i].transform.position = ScoreScore[j].transform.position;
-        ScoreScore[j].transform.position = t;
-        int a = scores[i];
-        scores[i] = scores[j];
-        scores[j] = a;
     }
     
 }
